@@ -1,0 +1,161 @@
+<style>
+    .traffic-light>div {
+        display: inline-block;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: gray;
+    }
+    .red.light {
+        background-color: red !important;
+    }
+    .yellow.light {
+        background-color: yellow !important;
+    }
+    .green.light {
+        background-color: green !important;
+    }
+</style>
+
+<div class="traffic-light">
+    <div class="green"></div>
+    <div class="yellow"></div>
+    <div class="red"></div>
+    <button id="next">next</button>
+</div>
+
+<script>
+    const light = function(color, second) {
+        let ls = document.querySelectorAll('.traffic-light>div');
+        for(let i = 0; i < ls.length; i++) {
+            let e = ls[i];
+            e.classList.remove('light');
+        }
+        let l = document.querySelector(`.${color}`);
+        l.classList.add('light');
+    };
+
+    // callback
+    const solution1 = function() {
+        const green = function() {
+            light('green');
+            setTimeout(yellow, 10 * 100);
+        }
+        const yellow = function() {
+            light('yellow');
+            setTimeout(red, 2 * 100);
+        }
+        const red = function() {
+            light('red');
+            setTimeout(green, 5 * 100);
+        }
+        green();
+    };
+
+    // callback
+    const solution2 = function() {
+        light('green');
+        setTimeout(function() {
+            light('yellow');
+            setTimeout(function() {
+                light('red');
+                setTimeout(function() {
+                    solution2();
+                }, 5 * 100);
+            }, 2 * 100);
+        }, 10 * 100);
+    };
+
+    const sleep = function(ms) {
+        return new Promise(function(resolve, reject) {
+            setTimeout(resolve, ms);
+        });
+    };
+
+    // Promise
+    const solution3 = function() {
+        light('green');
+        sleep(10 * 100).then(function() {
+            light('yellow');
+            return sleep(2 * 100);
+        }).then(function() {
+            light('red');
+            return sleep(5 * 100);
+        }).then(function() {
+            solution3();
+        })
+    };
+
+    // async await
+    const solution4 = async function() {
+        while(true) {
+            light('green');
+            await sleep(10 * 100);
+            light('yellow');
+            await sleep(2 * 100);
+            light('red');
+            await sleep(5 * 100);
+        }
+    };
+
+    // async await 通过 next 按钮控制
+    const happen = function(element, eventName) {
+        return new Promise(function(resolve, reject) {
+            element.addEventListener(eventName, resolve, {onece: true});
+        });
+    };
+    const solution5 = async function() {
+        const b = document.querySelector('#next');
+        while(true) {
+            light('green');
+            await happen(b, 'click');
+            light('yellow');
+            await happen(b, 'click');
+            light('red');
+            await happen(b, 'click');
+        }
+    };
+
+    // generator 模拟 async await
+    const solution6 = function*() {
+        while(true) {
+            light('green');
+            yield sleep(10 * 100);
+            light('yellow');
+            yield sleep(2 * 100);
+            light('red');
+            yield sleep(5 * 100);
+        }
+    };
+    const run = function(iterator) {
+        let {value, done} = iterator.next();
+        if(done) {
+            return;
+        }
+        if(value instanceof Promise) {
+            value.then(() => {
+                run(iterator);
+            });
+        }
+    };
+    const co = function(generator) {
+        return function() {
+            return run(generator());
+        }
+    };
+    go = co(solution6);
+
+    // async generator
+    async function* counter() {
+        let i = 0;
+        while(true) {
+            await sleep(1000);
+            yield i++;
+        }
+    }
+    async function start() {
+        for await(let v of counter()) {
+            console.log(v);
+        }
+    }
+</script>
