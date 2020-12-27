@@ -1,0 +1,286 @@
+<style>
+    .container {
+        display: inline-block;
+        position: relative;
+        background-color: #f8e7b9;
+    }
+    .mask {
+        position: absolute;
+        top: 0;
+        box-sizing: border-box;
+        width: 100%;
+        height: 100%;
+        border: 24px solid #f8e7b9;
+    }
+    .cell {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        text-align: center;
+    }
+    .cell>div {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .line {
+        background-color: black;
+    }
+    .line.heng {
+        width: 100%;
+        height: 2px;
+    }
+    .line.shu {
+        width: 2px;
+        height: 100%;
+    }
+    .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: black;
+    }
+    .disc {
+        z-index: 1;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        /* debug */
+        font-size: 10px;
+        background-color: gray;
+        color: lightsalmon;
+    }
+    .disc.black {
+        border: 2px solid black;
+        background-color: #333;
+    }
+    .disc.white {
+        border: 2px solid black;
+        background-color: white;
+    }
+    .disc.red {
+        border: 2px solid black;
+        background-color: red;
+    }
+</style>
+
+<div class="container">
+    <div class="board"></div>
+    <div class="mask"></div>
+</div>
+
+<script>
+    let pattern = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ];
+    let color = 1;
+    
+    function show() {
+        let p2v = ['', 'black', 'white', 'red'];
+        let discs = document.querySelectorAll('.board .disc');
+        for(let i = 0; i < 15 * 15; i++) {
+            let d = discs[i];
+            let p = pattern[i];
+            let className = p2v[p];
+            d.classList.value = `disc ${className}`;
+        }
+    }
+
+    function checkWithoutXY(board, color) {
+        // -
+        for(let i = 0; i < 15; i++) {
+            let hasSameDisc = false;
+            let count = 0;
+            for(let j = 0; j < 15; j++) {
+                let index = i * 15 + j;
+                if(pattern[index] === color) {
+                    hasSameDisc = true;
+                } else {
+                    hasSameDisc = false;
+                    count = 0;
+                }
+                if(hasSameDisc) {
+                    count++;
+                }
+                if(count === 5) {
+                    return true;
+                }
+            }
+        }
+        // |
+        for(let i = 0; i < 15; i++) {
+            let hasSameDisc = false;
+            let count = 0;
+            for(let j = 0; j < 15; j++) {
+                let index = j * 15 + i;
+                if(pattern[index] === color) {
+                    hasSameDisc = true;
+                } else {
+                    hasSameDisc = false;
+                    count = 0;
+                }
+                if(hasSameDisc) {
+                    count++;
+                }
+                if(count === 5) {
+                    return true;
+                }
+            }
+        }
+
+        // \
+        for(let i = 0; i <= 210;) {
+            let hasSameDisc = false;
+            let count = 0;
+            let j = 0;
+            while(true) {
+                let index = i + j * 16;
+                if(j > 0 && (index % 15 === 0 || index >= 15 * 15)) {
+                    break;
+                }
+                // pattern[index] = 3;
+                if(pattern[index] === color) {
+                    hasSameDisc = true;
+                } else {
+                    hasSameDisc = false;
+                    count = 0;
+                }
+                if(hasSameDisc) {
+                    count++;
+                }
+                if(count === 5) {
+                    return true;
+                }
+                j++;
+            }
+            // show();
+
+            if(i < 15) {
+                i++;
+            } else {
+                i += 15;
+            }
+        }
+        // /
+        for(let i = 0; i <= 224;) {
+            let hasSameDisc = false;
+            let count = 0;
+            let j = 0;
+            while(true) {
+                let index = i + j * 14;
+                if(j > 0 && ((index + 1) % 15 === 0 || index >= 15 * 15)) {
+                    break;
+                }
+                // pattern[index] = 3;
+                if(pattern[index] === color) {
+                    hasSameDisc = true;
+                } else {
+                    hasSameDisc = false;
+                    count = 0;
+                }
+                if(hasSameDisc) {
+                    count++;
+                }
+                if(count === 5) {
+                    return true;
+                }
+                j++;
+            }
+            // show();
+
+            if(i < 14) {
+                i++;
+            } else {
+                i += 15;
+            }
+        }
+        return false;
+    }
+
+    function check(board, color, x, y) {
+        function numberOfSameDisc(x, y, vx, vy) {
+            let count = 0;
+            for(let i = 0; i < 4; i++) {
+                x += vx;
+                y += vy;
+                let index = y * 15 + x;
+                if((x < 0 || x > 14 || y < 0 || y > 14) || pattern[index] !== color) {
+                    break;
+                }
+                count++;
+            }
+            return count;
+        }
+        let a = [
+            [-1, 0, 1, 0],
+            [0, -1, 0, 1],
+            [1, -1, -1, 1],
+            [-1, -1, 1, 1],
+        ]
+        for(let i of a) {
+            if(numberOfSameDisc(x, y, i[0], i[1]) + numberOfSameDisc(x, y, i[2], i[3]) === 4) {
+                return true;
+            }
+        }
+    }
+
+    function init() {
+        let board = document.querySelector('.board');
+
+        // 显示棋盘
+        let dots = [15 * 3 + 3, 15 * 4 - 4, 15 * 11 + 3, 15 * 12 - 4, 15 * 7 + 7];
+        for(let i = 0; i < 15; i++) {
+            for(let j = 0; j < 15; j++) {
+                let dot = '';
+                if(dots.includes(i * 15 + j)) {
+                    dot = '<div class="dot"></div>';
+                }
+                let cell = `<div class='cell'>
+                    <div class='line heng'></div>
+                    <div class='line shu'></div>
+                    ${dot}
+                    <div class='disc' data-x=${j} data-y=${i}>
+                        ${j} ${i}<br>
+                        ${i * 15 + j}    
+                    </div>
+                </div>`
+                board.innerHTML += cell;
+            }
+            board.innerHTML += '<br>';
+        }
+
+        show();
+        // 落子
+        board.addEventListener('click', function(e) {
+            let target = e.target;
+            let x = Number(target.dataset.x);
+            let y = Number(target.dataset.y);
+            pattern[y * 15 + x] = color;
+            if(check(pattern, color, x, y)) {
+                let p2v = ['', 'black', 'white'];
+                alert(p2v[color] + ' win');
+            }
+
+            color = 3 - color;
+            show();
+        });
+    }
+
+    init();
+</script>
