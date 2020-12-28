@@ -72,28 +72,9 @@
 </div>
 
 <script>
-    let pattern = [
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ];
-    let color = 1;
-    
-    function show() {
+    function show(board, pattern) {
         let p2v = ['', 'black', 'white', 'red'];
-        let discs = document.querySelectorAll('.board .disc');
+        let discs = board.querySelectorAll('.disc');
         for(let i = 0; i < 15 * 15; i++) {
             let d = discs[i];
             let p = pattern[i];
@@ -102,118 +83,7 @@
         }
     }
 
-    function checkWithoutXY(board, color) {
-        // -
-        for(let i = 0; i < 15; i++) {
-            let hasSameDisc = false;
-            let count = 0;
-            for(let j = 0; j < 15; j++) {
-                let index = i * 15 + j;
-                if(pattern[index] === color) {
-                    hasSameDisc = true;
-                } else {
-                    hasSameDisc = false;
-                    count = 0;
-                }
-                if(hasSameDisc) {
-                    count++;
-                }
-                if(count === 5) {
-                    return true;
-                }
-            }
-        }
-        // |
-        for(let i = 0; i < 15; i++) {
-            let hasSameDisc = false;
-            let count = 0;
-            for(let j = 0; j < 15; j++) {
-                let index = j * 15 + i;
-                if(pattern[index] === color) {
-                    hasSameDisc = true;
-                } else {
-                    hasSameDisc = false;
-                    count = 0;
-                }
-                if(hasSameDisc) {
-                    count++;
-                }
-                if(count === 5) {
-                    return true;
-                }
-            }
-        }
-
-        // \
-        for(let i = 0; i <= 210;) {
-            let hasSameDisc = false;
-            let count = 0;
-            let j = 0;
-            while(true) {
-                let index = i + j * 16;
-                if(j > 0 && (index % 15 === 0 || index >= 15 * 15)) {
-                    break;
-                }
-                // pattern[index] = 3;
-                if(pattern[index] === color) {
-                    hasSameDisc = true;
-                } else {
-                    hasSameDisc = false;
-                    count = 0;
-                }
-                if(hasSameDisc) {
-                    count++;
-                }
-                if(count === 5) {
-                    return true;
-                }
-                j++;
-            }
-            // show();
-
-            if(i < 15) {
-                i++;
-            } else {
-                i += 15;
-            }
-        }
-        // /
-        for(let i = 0; i <= 224;) {
-            let hasSameDisc = false;
-            let count = 0;
-            let j = 0;
-            while(true) {
-                let index = i + j * 14;
-                if(j > 0 && ((index + 1) % 15 === 0 || index >= 15 * 15)) {
-                    break;
-                }
-                // pattern[index] = 3;
-                if(pattern[index] === color) {
-                    hasSameDisc = true;
-                } else {
-                    hasSameDisc = false;
-                    count = 0;
-                }
-                if(hasSameDisc) {
-                    count++;
-                }
-                if(count === 5) {
-                    return true;
-                }
-                j++;
-            }
-            // show();
-
-            if(i < 14) {
-                i++;
-            } else {
-                i += 15;
-            }
-        }
-        return false;
-    }
-
-    function check(board, color, x, y) {
+    function checkWin(pattern, color, x, y) {
         function numberOfSameDisc(x, y, vx, vy) {
             let count = 0;
             for(let i = 0; i < 4; i++) {
@@ -240,7 +110,139 @@
         }
     }
 
-    function init() {
+    function clone(pattern) {
+        return Object.create(pattern);
+    }
+
+    function willWin(pattern, color) {
+        for(let i = 0; i < 15; i++) {
+            for(let j = 0; j < 15; j++) {
+                if(pattern[i * 15 + j]) {
+                    continue;
+                }
+                let t = clone(pattern);
+                t[i * 3 + j] = color;
+                if(checkWin(t, color, j, i)) {
+                    return [j, i];
+                }
+            }
+        }
+        return null;
+    }
+
+    function aroundPointsFrom(pattern, ox, oy) {
+        let r = [];
+        let vs = [
+            [-1, -1],
+            [0, -1],
+            [1, -1],
+            [-1, 0],
+            [1, 0],
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+        ]
+        for(let v of vs) {
+            let x = ox + v[0];
+            let y = oy + v[1];
+            if((x < 0 || x > 14 || y < 0 || y > 14) || pattern[y * 15 + x] !== 0) {
+                continue;
+            }
+            r.push([x, y]);
+        }
+        return r;
+    }
+
+    function bestChoice(pattern, color, maxDepth = 4, root) {
+        if(maxDepth-- === 0) {
+            return {
+                point: null,
+                result: 0
+            }
+        }
+        let p = willWin(pattern, color);
+        if(p) {
+            return {
+                point: p,
+                result: 1
+            };
+        }
+        // 选点
+        let ps = []
+        for(let i = 0; i < 15; i++) {
+            for(let j = 0; j < 15; j++) {
+                if(pattern[i * 15 + j] === 0) {
+                    continue;
+                }
+                ps = ps.concat(aroundPointsFrom(pattern, j, i));
+            }
+        }
+
+        let result = -2;
+        let point = null;
+        let set = new Set();
+        for(let p of ps) {
+            let [x, y] = p;
+            if(set.has(y * 15 + x)) {
+                continue;
+            }
+            // 
+            let t = clone(pattern);
+            t[y * 15 + x] = color;
+            let node = {
+                board: stringFrom(t, color),
+                children: []
+            }
+            root.children.push(node);
+            let r = bestChoice(t, 3 - color, maxDepth, node).result;
+            if(-r > result) {
+                result = -r;
+                point = [x, y];
+            }
+            // 剪纸
+            if(result === 1) {
+                break;
+            }
+
+            set.add(y * 15 + x);
+        }
+        return {
+            point: point,
+            result: point ? result : 0
+        }
+    }
+
+    function stringFrom(pattern, color) {
+        let s = color + '\n';
+        for(let i = 0; i < 15; i++) {
+            for(let j = 0; j < 15; j++) {
+                s += pattern[i * 15 + j];
+            }
+            s += '\n';
+        }
+        return s;
+    }
+
+    function main() {
+        let pattern = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+        let color = 1;
+
         let board = document.querySelector('.board');
 
         // 显示棋盘
@@ -265,22 +267,29 @@
             board.innerHTML += '<br>';
         }
 
-        show();
+        show(board, pattern);
+
         // 落子
         board.addEventListener('click', function(e) {
+            let p2v = ['', 'black', 'white', 'red'];
             let target = e.target;
             let x = Number(target.dataset.x);
             let y = Number(target.dataset.y);
             pattern[y * 15 + x] = color;
-            if(check(pattern, color, x, y)) {
-                let p2v = ['', 'black', 'white'];
+            if(checkWin(pattern, color, x, y)) {
                 alert(p2v[color] + ' win');
             }
 
             color = 3 - color;
-            show();
+            show(board, pattern);
+            let root = {
+                board: stringFrom(pattern, color),
+                children: []
+            };
+            console.log(p2v[color], bestChoice(pattern, color, 4, root));
+            console.log(root);
         });
     }
 
-    init();
+    main();
 </script>
