@@ -1,0 +1,224 @@
+<style>
+    .cell {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-right: 1px solid white;
+        border-bottom: 1px solid white;
+        background-color: gray;
+        vertical-align: middle;
+        font-size: 14px;
+    }
+    #container {
+        width: 900px;
+    }
+    .end::after {
+        content: '';
+        display: block;
+        width: 8px;
+        height: 4px;
+        background-color: red !important;
+    }
+</style>
+
+<div id="container"></div>
+<button onclick="localStorage['map'] = JSON.stringify(map)">save</button>
+<button id="next">next</button>
+<button onclick="debug = !debug">debug</button>
+
+<script>
+    class Sorted {
+        constructor(data, compare) {
+            this.data = data.slice();
+            this.compare = compare || ((a, b) => a - b);
+        }
+        take() {
+            if(this.data.length === 0) {
+                return;
+            }
+            let min = this.data[0];
+            let minIndex = 0;
+
+            for(let i = 1; i < this.data.length; i++) {
+                if(this.compare(this.data[i], min) < 0) {
+                    min = this.data[i];
+                    minIndex = i;
+                }
+            }
+
+            this.data[minIndex] = this.data[this.data.length - 1];
+            this.data.pop();
+            return min;
+        }
+        give(v) {
+            this.data.push(v);
+        }
+        get length() {
+            return this.data.length;
+        }
+    }
+
+    let mapWidth = 100, mapHeight = 100;
+    let map = localStorage['map'] ? JSON.parse(localStorage['map']) : Array(mapWidth * mapHeight).fill(0);
+    let container = document.querySelector('#container');
+    for(let i = 0; i < mapHeight; i++) {
+        for(let j = 0; j < mapWidth; j++) {
+            let cell = document.createElement('div');
+            cell.classList.add('cell');
+            if(map[mapWidth * i + j] === 1) {
+                cell.style.backgroundColor = 'black';
+            }
+            cell.addEventListener('mousemove', function() {
+                if(mouseDown) {
+                    if(clear) {
+                        cell.style.backgroundColor = '';
+                        map[mapWidth * i + j] = 0;
+                    } else {
+                        cell.style.backgroundColor = 'black';
+                        map[mapWidth * i + j] = 1;
+                    }
+                }
+            });
+            container.appendChild(cell);
+        }
+        // container.appendChild(document.createElement('br'));
+    }
+
+    let mouseDown = false;
+    let clear = false;
+    document.addEventListener('mousedown', function(e) {
+        mouseDown = true;
+        clear = (e.which === 3);
+    });
+    document.addEventListener('mouseup', e => mouseDown = false);
+    document.addEventListener('contextmenu', e => e.preventDefault());
+
+    document.addEventListener('keydown', function() {
+        document.getElementById('next').click();
+    })
+
+    function sleep(ms) {
+        return new Promise(function(resolve, reject) {
+            setTimeout(resolve, ms);
+        });
+    }
+
+    function happen(element=document.querySelector('#next'), eventName='click') {
+        return new Promise(function(resolve, reject) {
+            element.addEventListener(eventName, resolve, {onece: true});
+        });
+    };
+
+    let debug = true;
+
+    async function findPath(map, start, end) {
+        let table = Object.create(map);
+        
+        let queue = new Sorted([start], (a, b) => {
+            return f(a) - f(b);
+        });
+        table[start[1] * mapWidth + start[0]] = {
+            pre: null,
+            distanceFromStart: 0
+        };
+
+        async function insert(x, y, pre) {
+            if(x < 0 || x >= mapWidth || y < 0 || y >= mapHeight) {
+                return;
+            }
+            if(table[y * mapWidth + x]) {
+                if(table[y * mapWidth + x] !== 1) {
+                    let oldDistance = table[y * mapWidth + x].distanceFromStart;
+                    let newDistance = getDistanceFromStart([x, y], pre);
+                    if(newDistance < oldDistance) {
+                        table[y * mapWidth + x] = {
+                            pre,
+                            distanceFromStart: newDistance
+                        };
+                        
+                        container.children[y * mapWidth + x].innerText = f([x, y]);
+                    }
+                }
+                return;
+            }
+
+            container.children[y * mapWidth + x].style.backgroundColor = 'green';
+
+            table[y * mapWidth + x] = {
+                pre,
+                distanceFromStart: getDistanceFromStart([x, y], pre)
+            };
+            container.children[y * mapWidth + x].innerText = f([x, y]);
+
+            queue.give([x, y]);
+        }
+
+        function f(a) {
+            // 贪心
+            // return distance(a, end);
+
+            // A*
+            let r = distance(a, end) + table[a[1] * mapWidth + a[0]].distanceFromStart;
+            return r;
+
+            // 广度优先
+            let pre = table[a[1] * mapWidth + a[0]].pre;
+            return getDistanceFromStart(a, pre);
+        }
+
+        function getDistanceFromStart(current, pre) {
+            let distanceFromPre = distance(current, pre);
+            return table[pre[1] * mapWidth + pre[0]].distanceFromStart + distanceFromPre;
+        }
+
+        function distance(point, end) {
+            // 曼哈顿距离
+            // return Math.floor(heuristic(point, end));
+
+            // 欧几里得距离
+            // return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
+            return Math.sqrt((point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2);
+        }
+
+        function heuristic(point, goal) {
+            const D = 10;
+            const D2 = Math.sqrt(2) * 10;
+            let dx = Math.abs(point[0] - goal[0])
+            let dy = Math.abs(point[1] - goal[1])
+            return D * (dx + dy) + (D2 - 2 * D) * Math.min(dx, dy);
+        }
+
+        while(queue.length) {
+            let [x, y] = queue.take();
+            
+            if(debug) {
+                await sleep(1);
+                await happen();
+            }
+            container.children[y * mapWidth + x].style.backgroundColor = 'lightgreen';
+
+            if(x === end[0] && y === end[1]) {
+                let path = [];
+                while(x !== start[0] || y !== start[1]) {
+                    path.push([x, y]);
+                    // [x, y] = table[y * mapWidth + x];
+                    [x, y] = table[y * mapWidth + x].pre;
+                    await sleep(1);
+                    container.children[y * mapWidth + x].style.backgroundColor = 'purple';
+                }
+                return path;
+            }
+
+            await insert(x - 1, y, [x, y]);
+            await insert(x, y - 1, [x, y]);
+            await insert(x + 1, y, [x, y]);
+            await insert(x, y + 1, [x, y]);
+
+            await insert(x - 1, y - 1, [x, y]);
+            await insert(x + 1, y + 1, [x, y]);
+            await insert(x + 1, y - 1, [x, y]);
+            await insert(x - 1, y + 1, [x, y]);
+        }
+        return null;
+    }
+</script>
