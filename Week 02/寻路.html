@@ -1,30 +1,90 @@
 <style>
     .cell {
         display: inline-block;
-        width: 8px;
-        height: 8px;
+        line-height: 49px;
+        width: 49px;
+        height: 49px;
         border-right: 1px solid white;
         border-bottom: 1px solid white;
         background-color: gray;
         vertical-align: middle;
-        font-size: 14px;
+        font-size: 12px;
+        text-align: center;
+        position: relative;
+    }
+    .start {
+        background-color: purple !important;
+    }
+    .end {
+        content: 'end';
+        background-color: purple !important;
+    }
+    .pre {
+        line-height: initial;
+        position: absolute;
+    }
+    .right {
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    .down {
+        bottom: -3;
+        left: 50%;
+        transform: translateX(-50%) rotate(90deg);
+    }
+    .left {
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%) rotate(180deg);
+    }
+    .up {
+        top: -5;
+        left: 44%;
+        transform: translateX(-50%) rotate(-90deg);
+    }
+    .right-down {
+        right: 0;
+        bottom: -2;
+        transform:  rotate(45deg);
+    }
+    .left-up {
+        left: 1;
+        top: -2;
+        transform:  rotate(-135deg);
+    }
+    .right-up {
+        right: 1;
+        top: -4;
+        transform:  rotate(-45deg);
+    }
+    .left-down {
+        left: 1;
+        bottom: -4;
+        transform:  rotate(135deg);
     }
     #container {
-        width: 900px;
-    }
-    .end::after {
-        content: '';
-        display: block;
-        width: 8px;
-        height: 4px;
-        background-color: red !important;
+        width: 750px;
     }
 </style>
 
 <div id="container"></div>
 <button onclick="localStorage['map'] = JSON.stringify(map)">save</button>
+
+<button onclick="status = 'setBlock';">setBlock</button>
+<button onclick="status = 'clearBlock';">clearBlock</button>
+<button onclick="status = 'setStart';">设置起点</button>
+<button onclick="status = 'setEnd';">设置终点</button>
+
+<select id="searchType" name="searchType">
+    <option value="breadthFirst">breadthFirst</option>
+    <option value="greedy">greedy</option>
+    <option value="AStar" selected>AStar</option>
+</select>
+<button onclick="go()">go</button>
 <button id="next">next</button>
-<button onclick="debug = !debug">debug</button>
+
+<button onclick="show()">clear</button>
 
 <script>
     class Sorted {
@@ -58,44 +118,78 @@
         }
     }
 
-    let mapWidth = 100, mapHeight = 100;
+    let mapWidth = 15, mapHeight = 15;
     let map = localStorage['map'] ? JSON.parse(localStorage['map']) : Array(mapWidth * mapHeight).fill(0);
     let container = document.querySelector('#container');
-    for(let i = 0; i < mapHeight; i++) {
-        for(let j = 0; j < mapWidth; j++) {
-            let cell = document.createElement('div');
-            cell.classList.add('cell');
-            if(map[mapWidth * i + j] === 1) {
-                cell.style.backgroundColor = 'black';
-            }
-            cell.addEventListener('mousemove', function() {
-                if(mouseDown) {
-                    if(clear) {
-                        cell.style.backgroundColor = '';
-                        map[mapWidth * i + j] = 0;
-                    } else {
-                        cell.style.backgroundColor = 'black';
-                        map[mapWidth * i + j] = 1;
-                    }
+
+    function show() {
+        container.innerHTML = '';
+
+        for(let i = 0; i < mapHeight; i++) {
+            for(let j = 0; j < mapWidth; j++) {
+                let cell = document.createElement('div');
+                cell.classList.add('cell');
+                if(map[mapWidth * i + j] === 1) {
+                    cell.style.backgroundColor = 'black';
                 }
-            });
-            container.appendChild(cell);
+
+                cell.addEventListener('mousemove', function() {
+                    if(mouseLeftDown) {
+                        if(status === 'clearBlock') {
+                            cell.style.backgroundColor = '';
+                            map[mapWidth * i + j] = 0;
+                        } else if(status === 'setBlock') {
+                            cell.style.backgroundColor = 'black';
+                            map[mapWidth * i + j] = 1;
+                        }
+                    }
+                });
+
+                cell.addEventListener('click', function() {
+                    if(status === 'setStart') {
+                        start = [j, i];
+                        show();
+                    } else if(status === 'setEnd') {
+                        end = [j, i];
+                        show();
+                    }
+                })
+                container.appendChild(cell);
+            }
+            // container.appendChild(document.createElement('br'));
         }
-        // container.appendChild(document.createElement('br'));
+        
+        if(start) {
+            let e = container.children[start[1] * mapWidth + start[0]];
+            e.innerText = 'start';
+            e.classList.add('start');
+        }
+        if(end) {
+            let e = container.children[end[1] * mapWidth + end[0]];
+            e.innerText = 'end';
+            e.classList.add('end');
+        }
     }
 
-    let mouseDown = false;
-    let clear = false;
-    document.addEventListener('mousedown', function(e) {
-        mouseDown = true;
-        clear = (e.which === 3);
-    });
-    document.addEventListener('mouseup', e => mouseDown = false);
-    document.addEventListener('contextmenu', e => e.preventDefault());
+    let start, end;
+    let searchType = 'AStar';
+    show();
 
-    document.addEventListener('keydown', function() {
-        document.getElementById('next').click();
+    function go() {
+        if(start && end) {
+            findPath(map, start, end, searchType);
+        }
+    }
+
+    let status = 'setBlock';
+    let mouseLeftDown = false;
+    document.querySelector('#searchType').addEventListener('change', function(e) {
+        searchType = this.options[this.selectedIndex].value;
     })
+    document.addEventListener('mousedown', function(e) {
+        mouseLeftDown = (e.which === 1);
+    });
+    document.addEventListener('mouseup', e => mouseLeftDown = false);
 
     function sleep(ms) {
         return new Promise(function(resolve, reject) {
@@ -109,115 +203,137 @@
         });
     };
 
-    let debug = true;
-
-    async function findPath(map, start, end) {
+    async function findPath(map, start, end, searchType = 'AStar') {
         let table = Object.create(map);
         
-        let queue = new Sorted([start], (a, b) => {
-            return f(a) - f(b);
-        });
+        let compares = {
+            AStar(a, b) {
+                let r = f(a) - f(b);
+                if(r === 0) {
+                    r = h(a) - h(b);
+                }
+                return r;
+            },
+            greedy(a, b) {
+                return h(a) - h(b);
+            },
+            breadthFirst(a, b) {
+                return g(a) - g(b);
+            }
+        }
+
+        let queue = new Sorted([start], compares[searchType]);
+
         table[start[1] * mapWidth + start[0]] = {
             pre: null,
-            distanceFromStart: 0
+            gCost: 0
         };
+        // let s = container.children[start[1] * mapWidth + start[0]];
+        // s.innerText = 'start';
+        // s.classList.add('start');
+        // let e = container.children[end[1] * mapWidth + end[0]];
+        // e.innerText = 'end';
+        // e.classList.add('end');
 
-        async function insert(x, y, pre) {
+        async function insert(x, y, pre, preDirection) {
             if(x < 0 || x >= mapWidth || y < 0 || y >= mapHeight) {
                 return;
             }
-            if(table[y * mapWidth + x]) {
-                if(table[y * mapWidth + x] !== 1) {
-                    let oldDistance = table[y * mapWidth + x].distanceFromStart;
-                    let newDistance = getDistanceFromStart([x, y], pre);
-                    if(newDistance < oldDistance) {
-                        table[y * mapWidth + x] = {
-                            pre,
-                            distanceFromStart: newDistance
-                        };
-                        
-                        container.children[y * mapWidth + x].innerText = f([x, y]);
-                    }
-                }
+            if(table[y * mapWidth + x] === 1) {
                 return;
             }
 
-            container.children[y * mapWidth + x].style.backgroundColor = 'green';
-
+            let oldDistance = table[y * mapWidth + x].gCost;
+            let newDistance = g([x, y], pre);
+            let firstVisit = oldDistance === void 0
+            if(!firstVisit && newDistance >= oldDistance) {
+                return;
+            }
+            if(firstVisit) {
+                queue.give([x, y]);
+            }
             table[y * mapWidth + x] = {
                 pre,
-                distanceFromStart: getDistanceFromStart([x, y], pre)
-            };
-            container.children[y * mapWidth + x].innerText = f([x, y]);
+                gCost: newDistance,
+            }
 
-            queue.give([x, y]);
+            let cell = container.children[y * mapWidth + x];
+            cell.style.backgroundColor = 'green';
+            cell.innerHTML = `
+                <div style="margin-top: 7px; line-height: initial;">
+                    <div style="font-size: 12px;">
+                        <span>${g([x, y])}</span>
+                        <span>${h([x, y])}</span>
+                    </div>
+                    <div class="f-cost">${f([x, y])}</div>
+                </div>
+                <div class="pre ${preDirection}">></div>
+            `;
         }
 
-        function f(a) {
-            // 贪心
-            // return distance(a, end);
-
-            // A*
-            let r = distance(a, end) + table[a[1] * mapWidth + a[0]].distanceFromStart;
-            return r;
-
-            // 广度优先
-            let pre = table[a[1] * mapWidth + a[0]].pre;
-            return getDistanceFromStart(a, pre);
+        function f(point) {
+            return h(point) + g(point);
         }
 
-        function getDistanceFromStart(current, pre) {
+        // 节点 current 距离起点的代价（距离）
+        function g(current, pre) {
+            pre = pre || table[current[1] * mapWidth + current[0]].pre;
             let distanceFromPre = distance(current, pre);
-            return table[pre[1] * mapWidth + pre[0]].distanceFromStart + distanceFromPre;
+            let preDistanceFromStart = table[pre[1] * mapWidth + pre[0]].gCost;
+            return preDistanceFromStart + distanceFromPre;
         }
 
-        function distance(point, end) {
-            // 曼哈顿距离
-            // return Math.floor(heuristic(point, end));
-
-            // 欧几里得距离
-            // return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
-            return Math.sqrt((point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2);
+        // 节点 point 距离终点的预计代价，这也就是 A* 算法的启发函数
+        function h(point) {
+            return distance(point, end);
         }
 
-        function heuristic(point, goal) {
+        function distance(pointA, pointB, type = '曼哈顿') {
+            // 单位长度
             const D = 10;
-            const D2 = Math.sqrt(2) * 10;
-            let dx = Math.abs(point[0] - goal[0])
-            let dy = Math.abs(point[1] - goal[1])
-            return D * (dx + dy) + (D2 - 2 * D) * Math.min(dx, dy);
+            // 对角线长度
+            const D2 = Math.sqrt(2) * D;
+
+            let dx = Math.abs(pointA[0] - pointB[0]);
+            let dy = Math.abs(pointA[1] - pointB[1]);
+
+            let r;
+            if(type === '欧几里得') {
+                r = D * Math.sqrt(dx ** 2 + dy ** 2);
+            } else {
+                r = D * (dx + dy) + (D2 - 2 * D) * Math.min(dx, dy);
+            }
+
+            return Math.floor(r);
         }
 
         while(queue.length) {
             let [x, y] = queue.take();
             
-            if(debug) {
-                await sleep(1);
-                await happen();
-            }
+            await sleep(100);
+            await happen();
+
             container.children[y * mapWidth + x].style.backgroundColor = 'lightgreen';
 
             if(x === end[0] && y === end[1]) {
                 let path = [];
                 while(x !== start[0] || y !== start[1]) {
-                    path.push([x, y]);
-                    // [x, y] = table[y * mapWidth + x];
-                    [x, y] = table[y * mapWidth + x].pre;
-                    await sleep(1);
                     container.children[y * mapWidth + x].style.backgroundColor = 'purple';
+                    path.push([x, y]);
+                    [x, y] = table[y * mapWidth + x].pre;
                 }
                 return path;
             }
 
-            await insert(x - 1, y, [x, y]);
-            await insert(x, y - 1, [x, y]);
-            await insert(x + 1, y, [x, y]);
-            await insert(x, y + 1, [x, y]);
+            await insert(x - 1, y, [x, y], 'right');
+            await insert(x, y - 1, [x, y], 'down');
+            await insert(x + 1, y, [x, y], 'left');
+            await insert(x, y + 1, [x, y], 'up');
 
-            await insert(x - 1, y - 1, [x, y]);
-            await insert(x + 1, y + 1, [x, y]);
-            await insert(x + 1, y - 1, [x, y]);
-            await insert(x - 1, y + 1, [x, y]);
+            await insert(x - 1, y - 1, [x, y], 'right-down');
+            await insert(x + 1, y + 1, [x, y], 'left-up');
+            await insert(x + 1, y - 1, [x, y], 'left-down');
+            await insert(x - 1, y + 1, [x, y], 'right-up');
         }
         return null;
     }
