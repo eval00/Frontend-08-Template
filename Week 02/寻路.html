@@ -118,6 +118,66 @@
         }
     }
 
+    class MyBinaryHeap {
+        constructor(data, compare) {
+            this.data = data;
+            this.compare = compare;
+        }
+        parent(i) {
+            return Math.floor((i - 1) / 2);
+        }
+        leftChild(i) {
+            return Math.floor(2 * i + 1);
+        }
+        rightChild(i) {
+            return Math.floor(2 * i + 2);
+        }
+        give(v) {
+            this.data.push(v);
+            this.siftUp(this.data.length - 1);
+            // console.log('give', v, this.data);
+        }
+        siftUp(i) {
+            while(i > 0 && this.compare(this.data[i], this.data[this.parent(i)]) < 0) {
+                this.swap(i, this.parent(i));
+                i = this.parent(i);
+            }
+        }
+        swap(i, j) {
+            let t = this.data[i];
+            this.data[i] = this.data[j];
+            this.data[j] = t;
+        }
+        take() {
+            if(this.data.length === 0) {
+                return;
+            }
+            let min = this.data[0];
+            this.swap(0, this.data.length - 1);
+            this.data.pop();
+            this.siftDown(0);
+            // console.log('take', this.data);
+            return min;
+        }
+        siftDown(i) {
+            while(this.leftChild(i) < this.data.length) {
+                let j = this.leftChild(i);
+                if(j + 1 < this.data.length
+                    && this.compare(this.data[j + 1], this.data[j]) < 0) {
+                    j = this.rightChild(i);
+                }
+                if(this.compare(this.data[i], this.data[j]) <= 0) {
+                    break;
+                }
+                this.swap(i, j);
+                i = j;
+            }
+        }
+        get length() {
+            return this.data.length;
+        }
+    }
+
     let mapWidth = 15, mapHeight = 15;
     let map = localStorage['map'] ? JSON.parse(localStorage['map']) : Array(mapWidth * mapHeight).fill(0);
     let container = document.querySelector('#container');
@@ -228,12 +288,6 @@
             pre: null,
             gCost: 0
         };
-        // let s = container.children[start[1] * mapWidth + start[0]];
-        // s.innerText = 'start';
-        // s.classList.add('start');
-        // let e = container.children[end[1] * mapWidth + end[0]];
-        // e.innerText = 'end';
-        // e.classList.add('end');
 
         async function insert(x, y, pre, preDirection) {
             if(x < 0 || x >= mapWidth || y < 0 || y >= mapHeight) {
@@ -249,12 +303,12 @@
             if(!firstVisit && newDistance >= oldDistance) {
                 return;
             }
-            if(firstVisit) {
-                queue.give([x, y]);
-            }
             table[y * mapWidth + x] = {
                 pre,
                 gCost: newDistance,
+            }
+            if(firstVisit) {
+                queue.give([x, y]);
             }
 
             let cell = container.children[y * mapWidth + x];
