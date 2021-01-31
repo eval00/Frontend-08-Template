@@ -1,0 +1,12 @@
+练习：尽可能寻找你知道的计算机语言，尝试把它们分类
+
+1. 按形式语言的 用途 分类
+    数据描述语言
+        JSON, HTML, SQL, CSS
+    编程语言
+        C, C++, Java, C#, Python, Lisp, JavaScript
+2. 按形式语言的 表达方式 分类
+    数据描述语言
+        JSON, HTML, SQL, CSS, Lisp
+    编程语言
+        C, C++, Java, C#, Python, JavaScript
