@@ -1,0 +1,50 @@
+<script>
+
+function StringToNumber(string, radix) {
+    if(arguments.length < 2) {
+        radix = 10;
+    }
+
+    var chars = string.split('');
+    var number = 0;
+
+    var i = 0;
+    while(i < chars.length && chars[i] != '.') {
+        number = number * radix;
+        number += chars[i].codePointAt(0) - '0'.codePointAt(0);
+        i++;
+    }
+    if(chars[i] == '.') {
+        i++;
+    }
+    var fraction = 1;
+    while(i < chars.length) {
+        fraction = fraction / radix;
+        number += (chars[i].codePointAt(0) - '0'.codePointAt(0)) * fraction;
+        i++;
+    }
+
+    return number;
+}
+
+function NumberToString(number, radix=10) {
+    var integer = Math.floor(number);
+    var fraction = number - integer;
+    while(integer > 0) {
+        string = String(integer % radix) + string;
+        integer = Math.floor(integer / radix);
+    }
+    // if(fraction > 0) {
+    //     string += '.';
+    // }
+    // while(fraction > 0) {
+    //     integer = Math.floor(number * 10);
+    //     console.log(integer, number, (integer - Math.floor(number) * 10))
+    //     string += (integer - Math.floor(number) * 10);
+    //     number *= 10;
+    //     fraction = number - integer;
+    // }
+    return string;
+}
+
+</script>
