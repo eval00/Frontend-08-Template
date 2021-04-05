@@ -19,15 +19,19 @@ export class TimeLine {
             for(let animation of this[ANIAMTIONS]) {
                 let t;
                 if(this[START_TIME].get(animation) < startTime) {
-                    t = now - startTime - this[PAUSE_TIME];
+                    t = now - startTime;
                 } else {
-                    t = now - this[START_TIME].get(animation) - this[PAUSE_TIME];
+                    t = now - this[START_TIME].get(animation);
                 }
+                t = t - this[PAUSE_TIME] - animation.delay;
+
                 if(animation.duration < t) {
                     this[ANIAMTIONS].delete(animation);
                     t = animation.duration;
                 }
-                animation.receive(t);
+                if(t > 0) {
+                    animation.receive(t);
+                }
             }
             this[TICK_HANDLER] = requestAnimationFrame(this[TICK]);
         }
@@ -43,7 +47,15 @@ export class TimeLine {
         this[TICK]();
     }
 
-    reset() {}
+    reset() {
+        this.pause();
+        let startTime = Date.now();
+        this[PAUSE_TIME] = 0;
+        this[ANIAMTIONS] = new Set();
+        this[START_TIME] = new Map();
+        this[PAUSE_START] = 0;
+        this[TICK_HANDLER] = null;
+    }
 
     add(animation, startTime) {
         if(arguments.length < 2) {
@@ -62,11 +74,12 @@ export class Animation {
         this.endValue = endValue;
         this.duration = duration;
         this.delay = delay;
-        this.timingFunction = timingFunction;
-        this.template = template;
+        this.timingFunction = timingFunction || (v => v);
+        this.template = template || (v => v);
     }
     receive(time) {
         let range = this.endValue - this.startValue;
-        this.object[this.property] = this.template(this.startValue + range * time / this.duration);
+        let progress = this.timingFunction(time / this.duration);
+        this.object[this.property] = this.template(this.startValue + range * progress);
     }
 }
