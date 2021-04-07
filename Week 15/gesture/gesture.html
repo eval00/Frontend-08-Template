@@ -1,0 +1,12 @@
+<body oncontextmenu="event.preventDefault()"></body>
+
+<!-- <script src="./gesture5.js"></script> -->
+
+<script type="module">
+    import { enableGesture } from './gesture6.js';
+    enableGesture(document.documentElement);
+
+    document.documentElement.addEventListener('flick', e => {
+        console.log('flick event', e);
+    });
+</script>
